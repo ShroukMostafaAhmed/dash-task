@@ -32,6 +32,7 @@ export interface CreateUserPayload {
   email: string;
   phone?: string;
   website?: string;
+  company?: string;
 }
 
 export type UpdateUserPayload = Partial<CreateUserPayload>;

@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { usePostsStore } from "@/store/postsStore";
@@ -25,7 +24,7 @@ type PostForm = CreatePostPayload;
 function AdminPostsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { posts, total, loading, fetchPosts, createPost, updatePost, deletePost } = usePostsStore();
+  const { posts: storePosts, loading, fetchPosts, createPost, updatePost, deletePost } = usePostsStore();
   const { users, fetchUsers } = useUsersStore();
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -39,19 +38,33 @@ function AdminPostsContent() {
   const [saving, setSaving] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<PostForm>();
-  const totalPages = Math.ceil(total / DEFAULT_PAGE_LIMIT);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    fetchUsers();
+    fetchPosts({ page: 1, limit: 100 });
+  }, []); 
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (page > 1) params.set("page", String(page));
     router.replace(`${ROUTES.admin.posts}?${params.toString()}`, { scroll: false });
-    fetchPosts({ page, limit: DEFAULT_PAGE_LIMIT, search: debouncedSearch });
-  }, [debouncedSearch, page, router, fetchPosts]);
+  }, [debouncedSearch, page]); 
+  const filteredPosts = debouncedSearch
+    ? storePosts.filter((p) => p.title.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    : storePosts;
+
+  const totalPages = Math.ceil(filteredPosts.length / DEFAULT_PAGE_LIMIT);
+  const pagedPosts = filteredPosts.slice((page - 1) * DEFAULT_PAGE_LIMIT, page * DEFAULT_PAGE_LIMIT);
 
   const userOptions = users.map((u) => ({ value: u.id, label: u.name }));
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditTarget(null);
+    setSaving(false);
+    reset();
+  };
 
   const openCreate = () => {
     setEditTarget(null);
@@ -68,13 +81,14 @@ function AdminPostsContent() {
   const onSubmit = async (data: PostForm) => {
     setSaving(true);
     const payload = { ...data, userId: Number(data.userId) };
+    let ok = false;
     if (editTarget) {
-      await updatePost(editTarget.id, payload);
+      ok = await updatePost(editTarget.id, payload);
     } else {
-      await createPost(payload);
+      ok = await createPost(payload);
     }
     setSaving(false);
-    setModalOpen(false);
+    if (ok) closeModal();
   };
 
   const onDelete = async () => {
@@ -98,7 +112,7 @@ function AdminPostsContent() {
 
       {loading ? (
         <PageSpinner />
-      ) : posts.length === 0 ? (
+      ) : pagedPosts.length === 0 ? (
         <EmptyState title="No posts found" />
       ) : (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -111,7 +125,7 @@ function AdminPostsContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {posts.map((post) => (
+              {pagedPosts.map((post) => (
                 <tr key={post.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 text-gray-400 w-12">{post.id}</td>
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-white capitalize max-w-[200px] truncate">{post.title}</td>
@@ -131,14 +145,14 @@ function AdminPostsContent() {
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? "Edit Post" : "Create Post"} size="lg">
+      <Modal open={modalOpen} onClose={closeModal} title={editTarget ? "Edit Post" : "Create Post"} size="lg">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <Input label="Title" error={errors.title?.message} {...register("title", { required: "Title is required" })} />
           <Textarea label="Body" error={errors.body?.message} {...register("body", { required: "Body is required" })} />
           <Select label="Author" options={userOptions} error={errors.userId?.message} {...register("userId", { required: "Author is required" })} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={saving} disabled={editTarget ? !isDirty : false}>
+            <Button variant="secondary" type="button" onClick={closeModal}>Cancel</Button>
+            <Button type="submit" loading={saving}>
               {editTarget ? "Save Changes" : "Create"}
             </Button>
           </div>

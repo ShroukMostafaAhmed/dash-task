@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useUsersStore } from "@/store/usersStore";
@@ -23,7 +22,7 @@ type UserForm = CreateUserPayload;
 function AdminUsersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { users, total, loading, fetchUsers, createUser, updateUser, deleteUser } = useUsersStore();
+  const { users: storeUsers, loading, fetchUsers, createUser, updateUser, deleteUser } = useUsersStore();
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [page, setPage] = useState(Number(searchParams.get("page") || 1));
@@ -36,37 +35,56 @@ function AdminUsersContent() {
   const [saving, setSaving] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<UserForm>();
-  const totalPages = Math.ceil(total / DEFAULT_PAGE_LIMIT);
 
+  useEffect(() => { fetchUsers(); }, []); 
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (page > 1) params.set("page", String(page));
     router.replace(`${ROUTES.admin.users}?${params.toString()}`, { scroll: false });
-    fetchUsers({ search: debouncedSearch });
-  }, [debouncedSearch, page, router, fetchUsers]);
+  }, [debouncedSearch, page]);
+
+  const filteredUsers = debouncedSearch
+    ? storeUsers.filter(
+        (u) =>
+          u.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          u.username.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          u.email.toLowerCase().includes(debouncedSearch.toLowerCase())
+      )
+    : storeUsers;
+
+  const totalPages = Math.ceil(filteredUsers.length / DEFAULT_PAGE_LIMIT);
+  const pagedUsers = filteredUsers.slice((page - 1) * DEFAULT_PAGE_LIMIT, page * DEFAULT_PAGE_LIMIT);
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditTarget(null);
+    setSaving(false);
+    reset();
+  };
 
   const openCreate = () => {
     setEditTarget(null);
-    reset({ name: "", username: "", email: "", phone: "", website: "" });
+    reset({ name: "", username: "", email: "", phone: "", website: "", company: "" });
     setModalOpen(true);
   };
 
   const openEdit = (user: User) => {
     setEditTarget(user);
-    reset({ name: user.name, username: user.username, email: user.email, phone: user.phone, website: user.website });
+    reset({ name: user.name, username: user.username, email: user.email, phone: user.phone, website: user.website, company: user.company.name });
     setModalOpen(true);
   };
 
   const onSubmit = async (data: UserForm) => {
     setSaving(true);
+    let ok = false;
     if (editTarget) {
-      await updateUser(editTarget.id, data);
+      ok = await updateUser(editTarget.id, data);
     } else {
-      await createUser(data);
+      ok = await createUser(data);
     }
     setSaving(false);
-    setModalOpen(false);
+    if (ok) closeModal();
   };
 
   const onDelete = async () => {
@@ -76,8 +94,6 @@ function AdminUsersContent() {
     setDeleting(false);
     setDeleteTarget(null);
   };
-
-  const pagedUsers = users.slice((page - 1) * DEFAULT_PAGE_LIMIT, page * DEFAULT_PAGE_LIMIT);
 
   return (
     <>
@@ -134,16 +150,17 @@ function AdminUsersContent() {
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? "Edit User" : "Create User"}>
+      <Modal open={modalOpen} onClose={closeModal} title={editTarget ? "Edit User" : "Create User"}>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <Input label="Name" error={errors.name?.message} {...register("name", { required: "Name is required" })} />
           <Input label="Username" error={errors.username?.message} {...register("username", { required: "Username is required" })} />
           <Input label="Email" type="email" error={errors.email?.message} {...register("email", { required: "Email is required" })} />
           <Input label="Phone" {...register("phone")} />
           <Input label="Website" {...register("website")} />
+          <Input label="Company" {...register("company")} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={saving} disabled={editTarget ? !isDirty : false}>
+            <Button variant="secondary" type="button" onClick={closeModal}>Cancel</Button>
+            <Button type="submit" loading={saving}>
               {editTarget ? "Save Changes" : "Create"}
             </Button>
           </div>

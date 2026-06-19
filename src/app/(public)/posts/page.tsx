@@ -38,7 +38,7 @@ function PostsList() {
       .getAll({ page, limit: DEFAULT_PAGE_LIMIT, search: debouncedSearch })
       .then((res) => { setPosts(res.data); setTotal(res.total); })
       .finally(() => setLoading(false));
-  }, [debouncedSearch, page, router]);
+  }, [debouncedSearch, page]); 
 
   return (
     <>

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/constants";
+import { useForm } from "react-hook-form";
 
 interface LoginForm {
   username: string;
@@ -14,12 +13,17 @@ interface LoginForm {
 }
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.replace(ROUTES.admin.dashboard);
+    }
+  }, [isAuthenticated]);
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
@@ -28,7 +32,7 @@ export default function AdminLoginPage() {
     const ok = login(data.username, data.password);
     if (ok) {
       document.cookie = "auth=true; path=/; max-age=86400";
-      router.push(ROUTES.admin.dashboard);
+      window.location.replace(ROUTES.admin.dashboard);
     } else {
       setError("Invalid username or password.");
     }

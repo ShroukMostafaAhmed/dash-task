@@ -14,8 +14,8 @@ export const statsService = {
       api.get("/comments", { params: { _limit: 1 } }),
     ]);
 
-    const postTotal = parseInt(postsRes.headers["x-total-count"] || "100", 10);
-    const commentTotal = parseInt(commentsRes.headers["x-total-count"] || "500", 10);
+    const postTotal = parseInt(postsRes.headers["x-total-count"] || "0", 10) || postsRes.data.length || 100;
+    const commentTotal = parseInt(commentsRes.headers["x-total-count"] || "0", 10) || 500;
 
     return {
       userCount: usersRes.data.length,

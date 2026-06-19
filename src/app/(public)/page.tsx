@@ -12,13 +12,13 @@ export default function HomePage() {
         <div className="flex flex-wrap gap-4">
           <Link
             href={ROUTES.posts}
-            className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+            className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-blue-100 dark:hover:bg-gray-800 transition-colors"
           >
             Browse Posts
           </Link>
           <Link
             href={ROUTES.users}
-            className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-blue-100 dark:hover:bg-gray-800 transition-colors"
           >
             Browse Users
           </Link>

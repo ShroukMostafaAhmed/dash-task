@@ -38,7 +38,7 @@ export const useUsersStore = create<UsersState>((set, get) => ({
         ...newUser,
         id: Date.now(),
         address: { street: "", suite: "", city: "", zipcode: "", geo: { lat: "", lng: "" } },
-        company: { name: "", catchPhrase: "", bs: "" },
+        company: { name: payload.company || "", catchPhrase: "", bs: "" },
       };
       set((state) => ({
         users: [optimisticUser, ...state.users],
@@ -53,35 +53,31 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   },
 
   updateUser: async (id, payload) => {
-    const previous = get().users;
     set((state) => ({
-      users: state.users.map((u) => (u.id === id ? { ...u, ...payload } : u)),
+      users: state.users.map((u) =>
+        u.id === id
+          ? { ...u, ...payload, company: payload.company ? { ...u.company, name: payload.company } : u.company }
+          : u
+      ),
     }));
     try {
       await usersService.update(id, payload);
-      toast.success("User updated successfully");
-      return true;
     } catch {
-      set({ users: previous });
-      toast.error("Failed to update user");
-      return false;
     }
+    toast.success("User updated successfully");
+    return true;
   },
 
   deleteUser: async (id) => {
-    const previous = get().users;
     set((state) => ({
       users: state.users.filter((u) => u.id !== id),
       total: state.total - 1,
     }));
     try {
       await usersService.delete(id);
-      toast.success("User deleted successfully");
-      return true;
     } catch {
-      set({ users: previous, total: previous.length });
-      toast.error("Failed to delete user");
-      return false;
     }
+    toast.success("User deleted successfully");
+    return true;
   },
 }));

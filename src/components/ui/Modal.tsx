@@ -24,9 +24,9 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open) {
-      dialog.showModal();
+      if (!dialog.open) dialog.showModal();
     } else {
-      dialog.close();
+      if (dialog.open) dialog.close();
     }
   }, [open]);
 
@@ -38,15 +38,15 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
     return () => dialog.removeEventListener("close", handleClose);
   }, [onClose]);
 
-  if (!open) return null;
-
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="modal-title"
+      aria-modal="true"
       className={[
-        "w-full rounded-xl shadow-xl p-0 backdrop:bg-black/50",
+        "fixed m-auto inset-0 w-full rounded-xl shadow-xl p-0",
         "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100",
+        "backdrop:bg-black/50 backdrop:backdrop-blur-sm",
         sizeClasses[size],
       ].join(" ")}
       onClick={(e) => {
@@ -62,12 +62,11 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
           size="sm"
           onClick={onClose}
           aria-label="Close modal"
-          className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-100"
         >
           ✕
         </Button>
       </div>
-      <div className="px-6 py-4">{children}</div>
+      <div className="px-6 py-5">{children}</div>
     </dialog>
   );
 }

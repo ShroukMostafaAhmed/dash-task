@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -14,13 +14,12 @@ const navLinks = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { logout } = useAuth();
 
   const handleLogout = () => {
     logout();
     document.cookie = "auth=; path=/; max-age=0";
-    router.push(ROUTES.admin.login);
+    window.location.replace(ROUTES.home);
   };
 
   return (
@@ -55,9 +54,8 @@ export function AdminSidebar() {
       <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          className="flex w-full items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
-          <span aria-hidden="true">🚪</span>
           Logout
         </button>
       </div>

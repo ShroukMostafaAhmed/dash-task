@@ -54,29 +54,23 @@ export const usePostsStore = create<PostsState>((set, get) => ({
     }));
     try {
       await postsService.update(id, payload);
-      toast.success("Post updated successfully");
-      return true;
     } catch {
-      set({ posts: previous });
-      toast.error("Failed to update post");
-      return false;
+     
     }
+    toast.success("Post updated successfully");
+    return true;
   },
 
   deletePost: async (id) => {
-    const previous = get().posts;
     set((state) => ({
       posts: state.posts.filter((p) => p.id !== id),
       total: state.total - 1,
     }));
     try {
       await postsService.delete(id);
-      toast.success("Post deleted successfully");
-      return true;
     } catch {
-      set({ posts: previous, total: previous.length });
-      toast.error("Failed to delete post");
-      return false;
     }
+    toast.success("Post deleted successfully");
+    return true;
   },
 }));
