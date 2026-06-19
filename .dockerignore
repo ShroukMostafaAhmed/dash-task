@@ -1,7 +1,4 @@
 node_modules
-.next
-.env
 .git
-*.test.*
-__tests__
+.env
 coverage
